@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JavaScript Image Gallery</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: black;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+            font-weight: bold;
+        }
+
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn.active {
+            background: rgba(255, 255, 255, 0.4);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+        }
+
+        .search-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+
+        .search-input {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 25px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            placeholder-color: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(5px);
+            width: 300px;
+            font-size: 16px;
+        }
+
+        .search-input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .image-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            backdrop-filter: blur(5px);
+        }
+
+        .image-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .image-card img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+
+        .image-card:hover img {
+            transform: scale(1.05);
+        }
+
+        .image-info {
+            padding: 15px;
+            color: white;
+            text-align: center;
+        }
+
+        .image-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .image-category {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            max-width: 90%;
+            max-height: 90%;
+        }
+
+        .modal img {
+            max-width: 100%;
+            max-height: 70vh;
+            border-radius: 10px;
+        }
+
+        .modal-info {
+            color: white;
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            color: white;
+            font-size: 30px;
+            cursor: pointer;
+            background: none;
+            border: none;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .page-btn {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 15px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .page-btn:hover:not(.disabled) {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .page-btn.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .page-info {
+            color: white;
+            margin: 0 15px;
+        }
+
+        .stats {
+            text-align: center;
+            color: white;
+            margin-bottom: 20px;
+            opacity: 0.8;
+        }
+
+        @media (max-width: 768px) {
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .search-input {
+                width: 100%;
+                max-width: 300px;
+            }
+            
+            .gallery {
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Image Gallery</h1>
+        
+        <div class="controls">
+            <button class="btn active" data-category="all">All Images</button>
+            <button class="btn" data-category="nature">Nature</button>
+            <button class="btn" data-category="city">City</button>
+            <button class="btn" data-category="space">Space</button>
+            <button class="btn" data-category="ocean">Ocean</button>
+        </div>
+
+        <div class="search-container">
+            <input type="text" class="search-input" placeholder="Search images..." id="searchInput">
+        </div>
+
+        <div class="stats" id="stats"></div>
+
+        <div class="gallery" id="gallery"></div>
+
+        <div class="pagination" id="pagination">
+            <button class="page-btn" id="prevBtn">← Previous</button>
+            <span class="page-info" id="pageInfo"></span>
+            <button class="page-btn" id="nextBtn">Next →</button>
+        </div>
+
+        <div class="modal" id="modal">
+            <div class="modal-content">
+                <button class="close-btn" id="closeBtn">&times;</button>
+                <img id="modalImg" src="" alt="">
+                <div class="modal-info" id="modalInfo"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Image data - demonstrates arrays and objects
+        const imageData = [
+            {
+                id: 1,
+                title: "Mountain Lake",
+                category: "nature",
+                url: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop"
+            },
+            {
+                id: 2,
+                title: "City Skyline",
+                category: "city",
+                url: "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=400&h=300&fit=crop"
+            },
+            {
+                id: 3,
+                title: "Galaxy View",
+                category: "space",
+                url: "https://images.unsplash.com/photo-1446776653964-20c1d3a81b06?w=400&h=300&fit=crop"
+            },
+            {
+                id: 4,
+                title: "Ocean Waves",
+                category: "ocean",
+                url: "https://images.unsplash.com/photo-1505142468610-359e7d316be0?w=400&h=300&fit=crop"
+            },
+            {
+                id: 5,
+                title: "Forest Path",
+                category: "nature",
+                url: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=400&h=300&fit=crop"
+            },
+            {
+                id: 6,
+                title: "Urban Street",
+                category: "city",
+                url: "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=400&h=300&fit=crop"
+            },
+            {
+                id: 7,
+                title: "Nebula",
+                category: "space",
+                url: "https://images.unsplash.com/photo-1446776877081-d282a0f896e2?w=400&h=300&fit=crop"
+            },
+            {
+                id: 8,
+                title: "Coral Reef",
+                category: "ocean",
+                url: "https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=400&h=300&fit=crop"
+            },
+            {
+                id: 9,
+                title: "Mountain Peak",
+                category: "nature",
+                url: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop"
+            },
+            {
+                id: 10,
+                title: "Night City",
+                category: "city",
+                url: "https://images.unsplash.com/photo-1514565131-fce0801e5785?w=400&h=300&fit=crop"
+            },
+            {
+                id: 11,
+                title: "Earth from Space",
+                category: "space",
+                url: "https://images.unsplash.com/photo-1614730321146-b6fa6a46bcb4?w=400&h=300&fit=crop"
+            },
+            {
+                id: 12,
+                title: "Deep Ocean",
+                category: "ocean",
+                url: "https://images.unsplash.com/photo-1439066615861-d1af74d74000?w=400&h=300&fit=crop"
+            }
+        ];
+
+        // Global variables demonstrating variable declarations
+        let currentCategory = 'all';
+        let currentPage = 1;
+        let itemsPerPage = 6;
+        let filteredImages = [...imageData];
+        let searchTerm = '';
+
+        // DOM element references
+        const gallery = document.getElementById('gallery');
+        const modal = document.getElementById('modal');
+        const modalImg = document.getElementById('modalImg');
+        const modalInfo = document.getElementById('modalInfo');
+        const searchInput = document.getElementById('searchInput');
+        const stats = document.getElementById('stats');
+        const pagination = document.getElementById('pagination');
+        const pageInfo = document.getElementById('pageInfo');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+
+        // Function to filter images - demonstrates functions and conditionals
+        function filterImages(category, search = '') {
+            return imageData.filter(image => {
+                const matchesCategory = category === 'all' || image.category === category;
+                const matchesSearch = search === '' || 
+                    image.title.toLowerCase().includes(search.toLowerCase()) ||
+                    image.description.toLowerCase().includes(search.toLowerCase());
+                
+                return matchesCategory && matchesSearch;
+            });
+        }
+
+        // Function to render gallery - demonstrates loops and DOM manipulation
+        function renderGallery() {
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const imagesToShow = filteredImages.slice(startIndex, endIndex);
+
+            gallery.innerHTML = '';
+
+            // Using forEach loop to iterate through images
+            imagesToShow.forEach((image, index) => {
+                const imageCard = createImageCard(image);
+                gallery.appendChild(imageCard);
+                
+                // Add animation delay for each card
+                setTimeout(() => {
+                    imageCard.style.opacity = '1';
+                    imageCard.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+
+            updateStats();
+            updatePagination();
+        }
+
+        // Function to create image card - demonstrates DOM creation
+        function createImageCard(image) {
+            const card = document.createElement('div');
+            card.className = 'image-card';
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            card.style.transition = 'all 0.5s ease';
+
+            card.innerHTML = `
+                <img src="${image.url}" alt="${image.title}" loading="lazy">
+                <div class="image-info">
+                    <div class="image-title">${image.title}</div>
+                    <div class="image-category">${capitalizeFirst(image.category)}</div>
+                </div>
+            `;
+
+            // Event listener for opening modal
+            card.addEventListener('click', () => openModal(image));
+
+            return card;
+        }
+
+        // Function to open modal - demonstrates event handling
+        // Function to open modal - demonstrates event handling
+function openModal(image) {
+    modalImg.src = image.url;
+    modalImg.alt = image.title;
+    modalInfo.innerHTML = `
+        <h3>${image.title}</h3>
+        <p><strong>Category:</strong> ${capitalizeFirst(image.category)}</p>
+    `;
+    modal.style.display = 'block';
+    document.body.style.overflow = 'hidden';
+}
+
+
+        // Function to close modal
+        function closeModal() {
+            modal.style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+
+        // Utility function - demonstrates string manipulation
+        function capitalizeFirst(str) {
+            return str.charAt(0).toUpperCase() + str.slice(1);
+        }
+
+        // Function to update statistics
+        function updateStats() {
+            const totalImages = filteredImages.length;
+            const currentStart = (currentPage - 1) * itemsPerPage + 1;
+            const currentEnd = Math.min(currentPage * itemsPerPage, totalImages);
+            
+            if (totalImages === 0) {
+                stats.textContent = 'No images found';
+            } else {
+                stats.textContent = `Showing ${currentStart}-${currentEnd} of ${totalImages} images`;
+            }
+        }
+
+        // Function to update pagination
+        function updatePagination() {
+            const totalPages = Math.ceil(filteredImages.length / itemsPerPage);
+            
+            pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
+            
+            // Conditional logic for enabling/disabling buttons
+            if (currentPage <= 1) {
+                prevBtn.classList.add('disabled');
+                prevBtn.disabled = true;
+            } else {
+                prevBtn.classList.remove('disabled');
+                prevBtn.disabled = false;
+            }
+            
+            if (currentPage >= totalPages) {
+                nextBtn.classList.add('disabled');
+                nextBtn.disabled = true;
+            } else {
+                nextBtn.classList.remove('disabled');
+                nextBtn.disabled = false;
+            }
+        }
+
+        // Function to handle category change
+        function changeCategory(category) {
+            currentCategory = category;
+            currentPage = 1;
+            filteredImages = filterImages(category, searchTerm);
+            renderGallery();
+            
+            // Update active button
+            document.querySelectorAll('.btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`[data-category="${category}"]`).classList.add('active');
+        }
+
+        // Function to handle search
+        function handleSearch() {
+            searchTerm = searchInput.value;
+            currentPage = 1;
+            filteredImages = filterImages(currentCategory, searchTerm);
+            renderGallery();
+        }
+
+        // Event listeners - demonstrates various event types
+        document.addEventListener('DOMContentLoaded', () => {
+            // Category button events
+            document.querySelectorAll('.btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    changeCategory(e.target.dataset.category);
+                });
+            });
+
+            // Search input events
+            searchInput.addEventListener('input', handleSearch);
+            searchInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    handleSearch();
+                }
+            });
+
+            // Modal events
+            document.getElementById('closeBtn').addEventListener('click', closeModal);
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    closeModal();
+                }
+            });
+
+            // Keyboard events for modal
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && modal.style.display === 'block') {
+                    closeModal();
+                }
+            });
+
+            // Pagination events
+            prevBtn.addEventListener('click', () => {
+                if (currentPage > 1) {
+                    currentPage--;
+                    renderGallery();
+                }
+            });
+
+            nextBtn.addEventListener('click', () => {
+                const totalPages = Math.ceil(filteredImages.length / itemsPerPage);
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    renderGallery();
+                }
+            });
+
+            // Initial render
+            renderGallery();
+        });
+
+        // Additional features demonstrating more JavaScript concepts
+
+        // Function with default parameters
+        function animateElement(element, duration = 300) {
+            element.style.transition = `all ${duration}ms ease`;
+        }
+
+        // Arrow function example
+        const getRandomImage = () => {
+            const randomIndex = Math.floor(Math.random() * imageData.length);
+            return imageData[randomIndex];
+        };
+
+        // Template literal usage in search placeholder animation
+        let placeholderIndex = 0;
+        const placeholders = ['Search by title...', 'Search by category...', 'Try "mountain" or "city"...'];
+        
+        setInterval(() => {
+            if (searchInput.value === '') {
+                searchInput.placeholder = placeholders[placeholderIndex];
+                placeholderIndex = (placeholderIndex + 1) % placeholders.length;
+            }
+        }, 3000);
+
+        // Demonstration of higher-order functions
+        const logActivity = (action) => {
+            return function(details) {
+                console.log(`Gallery Action: ${action} - ${details}`);
+            };
+        };
+
+        const logView = logActivity('View');
+        const logFilter = logActivity('Filter');
+
+        // Add some interactivity logging
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('image-card') || e.target.closest('.image-card')) {
+                logView('Image modal opened');
+            }
+        });
+    </script>
+</body>
+</html>
